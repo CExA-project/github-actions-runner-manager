@@ -1,2 +1,6 @@
 # GitHub Actions Runner
 actions_runner/
+
+# State files
+runner.pid
+runner.log

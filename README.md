@@ -8,10 +8,12 @@ This manager aims to "demonize" GitHub Actions Runner in an environment where Sy
 
 ## Execution
 
-The manager can simply run by calling:
+The manager can simply be run by calling:
 
 ```sh
 ./github_actions_runner_manager.sh <arguments>
 ```
+
+Like a SysV init script, the manager accepts the subcommands `start`, `stop`, `restart`, and `status`.
 
 Please check the documentation of the command for more help.
