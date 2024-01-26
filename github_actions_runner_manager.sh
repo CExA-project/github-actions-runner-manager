@@ -101,7 +101,7 @@ main () {
                 runner_path="$OPTARG"
                 ;;
             "s")
-                state_path="$OPTARG"
+                state_path="$(realpath $OPTARG)"
                 ;;
             *)
                 echo "Unknown option $OPTARG"
