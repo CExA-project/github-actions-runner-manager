@@ -12,12 +12,18 @@ SCRIPT_PATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 start () {
     local runner_path="$1"
     local state_path="$2"
+    local force=$3
 
     if [[ -f $state_path/$PID_FILE ]]
     then
-        # the runner is already running
-        echo "The runner is already running"
-        exit 2
+        # the runner is presumably already running
+        if $force
+        then
+            echo "Force start"
+        else
+            echo "The runner is already running"
+            exit 2
+        fi
     fi
 
     # running as a service, see https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners/configuring-the-self-hosted-runner-application-as-a-service
@@ -64,13 +70,15 @@ usage () {
     cat <<EOF
 Manage GitHub Actions Runner like a SysV init script
 
-github_actions_runner_manager.sh [-r PATH] [-s PATH] [-h] {start|stop|restart|status}
+github_actions_runner_manager.sh [-r PATH] [-s PATH] [-f] [-h] {start|stop|restart|status}
 
 Optional arguments:
     -r PATH
         Path to GitHub Actions Runner directory. Default to $DEFAULT_RUNNER_DIR in the script directory.
     -s PATH
         Path to the state directory of the manager (where PID and log files are stored). Default to the script directory.
+    -f
+        Force start.
     -h
         Show this help message and exit.
 
@@ -90,9 +98,10 @@ main () {
     # default arguments
     local runner_path="$SCRIPT_PATH/$DEFAULT_RUNNER_DIR"
     local state_path="$SCRIPT_PATH"
+    local force=false
 
     # process optional arguments
-    while getopts ":hr:s:" option
+    while getopts ":hr:s:f" option
     do
         case $option in
             "h")
@@ -103,7 +112,10 @@ main () {
                 runner_path="$OPTARG"
                 ;;
             "s")
-                state_path="$OPTARG"
+                state_path="$(realpath $OPTARG)"
+                ;;
+            "f")
+                force=true
                 ;;
             *)
                 echo "Unknown option $OPTARG"
@@ -120,7 +132,7 @@ main () {
         local cmd="$1"
         case $cmd in
             "start")
-                start "$runner_path" "$state_path"
+                start "$runner_path" "$state_path" "$force"
                 exit 0
                 ;;
             "stop")
@@ -130,7 +142,7 @@ main () {
             "restart")
                 stop "$state_path"
                 sleep 1
-                start "$runner_path" "$state_path"
+                start "$runner_path" "$state_path" "$force"
                 exit 0
                 ;;
             "status")

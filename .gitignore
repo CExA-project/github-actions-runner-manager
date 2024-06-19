@@ -2,5 +2,6 @@
 actions_runner/
 
 # State files
+state/
 runner.pid
 runner.log
