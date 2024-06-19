@@ -22,6 +22,7 @@ start () {
 
     # running as a service, see https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners/configuring-the-self-hosted-runner-application-as-a-service
     echo "Starting runner"
+    echo "Starting runner on $(hostname)" >>$state_path/$LOG_FILE
     cd "$runner_path"
     bin/runsvc.sh >>$state_path/$LOG_FILE 2>&1 &
 
@@ -41,6 +42,7 @@ stop () {
     fi
 
     echo "Stopping runner"
+    echo "Stopping runner on $(hostname)" >>$state_path/$LOG_FILE
     kill -SIGTERM $(cat $state_path/$PID_FILE)
 
     echo "Removing pid file"
