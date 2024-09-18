@@ -14,6 +14,13 @@ start () {
     local state_path="$2"
     local force=$3
 
+    # check if the runner path exists
+    if ! [[ -d "$runner_path" ]]
+    then
+        echo "Runner path not found"
+        exit 2
+    fi
+
     if [[ -f $state_path/$PID_FILE ]]
     then
         # the runner is presumably already running
@@ -25,6 +32,8 @@ start () {
             exit 2
         fi
     fi
+
+    mkdir -p "$state_path"
 
     # running as a service, see https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners/configuring-the-self-hosted-runner-application-as-a-service
     echo "Starting runner"
