@@ -56,9 +56,18 @@ stop () {
         exit 2
     fi
 
-    echo "Stopping runner"
-    echo "Stopping runner on $(hostname)" >>$state_path/$LOG_FILE
-    kill -SIGTERM $(cat $state_path/$PID_FILE)
+    local pid=$(cat $state_path/$PID_FILE)
+
+    # check PID exists
+    if ps -p $pid >/dev/null
+    then
+        echo "Stopping runner"
+        echo "Stopping runner on $(hostname)" >>$state_path/$LOG_FILE
+        kill -SIGTERM $pid
+    else
+        echo "Runner already stopped"
+        echo "Runner already stopped on $(hostname)" >>$state_path/$LOG_FILE
+    fi
 
     echo "Removing pid file"
     rm -f $state_path/$PID_FILE
