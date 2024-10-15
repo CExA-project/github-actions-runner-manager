@@ -44,7 +44,7 @@ start () {
     fi
 
     # check if the runner is running
-    if is_running "$state_path"
+    if ! $force && is_running "$state_path"
     then
         echo "The runner is already running"
         exit 2
@@ -104,7 +104,7 @@ Optional arguments:
     -s PATH
         Path to the state directory of the manager (where PID and log files are stored). Default to the script directory.
     -f
-        Force start.
+        Force start even if the runner is running.
     -h
         Show this help message and exit.
 
