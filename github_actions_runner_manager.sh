@@ -9,6 +9,28 @@ DEFAULT_RUNNER_DIR="./actions_runner"
 # directory of the script, see https://stackoverflow.com/a/4774063/19422971
 SCRIPT_PATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 
+# check if runner is running based on the existence of a state file and based
+# on a valid PID
+is_running () {
+    local state_path="$1"
+
+    # if no PID file, it's not running
+    if [[ ! -f $state_path/$PID_FILE ]]
+    then
+        return 1
+    fi
+
+    local pid=$(cat $state_path/$PID_FILE)
+
+    # check PID exists
+    if ps -p $pid >/dev/null
+    then
+        return 0
+    else
+        return 1
+    fi
+}
+
 start () {
     local runner_path="$1"
     local state_path="$2"
@@ -21,19 +43,12 @@ start () {
         exit 2
     fi
 
-    if [[ -f $state_path/$PID_FILE ]]
+    # check if the runner is running
+    if is_running "$state_path"
     then
-        # the runner is presumably already running
-        if $force
-        then
-            echo "Force start"
-        else
-            echo "The runner is already running"
-            exit 2
-        fi
+        echo "The runner is already running"
+        exit 2
     fi
-
-    mkdir -p "$state_path"
 
     # running as a service, see https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners/configuring-the-self-hosted-runner-application-as-a-service
     echo "Starting runner"
@@ -49,18 +64,11 @@ start () {
 stop () {
     local state_path="$1"
 
-    if [[ ! -f $state_path/$PID_FILE ]]
+    # check if the runner is running
+    if is_running "$state_path"
     then
-        # the runner is not running
-        echo "The runner is not running"
-        exit 2
-    fi
+        local pid=$(cat $state_path/$PID_FILE)
 
-    local pid=$(cat $state_path/$PID_FILE)
-
-    # check PID exists
-    if ps -p $pid >/dev/null
-    then
         echo "Stopping runner"
         echo "Stopping runner on $(hostname)" >>$state_path/$LOG_FILE
         kill -SIGTERM $pid
@@ -69,14 +77,14 @@ stop () {
         echo "Runner already stopped on $(hostname)" >>$state_path/$LOG_FILE
     fi
 
-    echo "Removing pid file"
-    rm -f $state_path/$PID_FILE
+    echo "Removing PID file"
+    rm --force $state_path/$PID_FILE
 }
 
 status () {
     local state_path="$1"
 
-    if [[ -f $state_path/$PID_FILE ]]
+    if is_running "$state_path"
     then
         echo "Runner started"
     else
@@ -143,6 +151,8 @@ main () {
         esac
     done
     shift $((OPTIND-1))
+
+    mkdir -p "$state_path"
 
     # process mandatory argument
     if [[ -n "${1+_}" ]]
