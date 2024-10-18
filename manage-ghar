@@ -103,7 +103,7 @@ usage () {
     cat <<EOF
 Manage GitHub Actions Runner like a SysV init script
 
-github_actions_runner_manager.sh [-s STATE_PATH] [-c COMMAND] [-f] [-h] {start|stop|restart|status} RUNNER_PATH
+manage-ghar [-s STATE_PATH] [-c COMMAND] [-f] [-h] {start|stop|restart|status} RUNNER_PATH
 
 Optional arguments:
     -s STATE_PATH

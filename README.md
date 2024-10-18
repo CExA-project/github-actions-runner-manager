@@ -6,12 +6,24 @@ Manage GitHub Actions Runner like a SysV init script.
 
 This manager aims to "demonize" GitHub Actions Runner in an environment where Systemd cannot be used.
 
-## Execution
+## Install
+
+```sh
+make
+```
+
+Default installation prefix is `$HOME/.local`, to change it:
+
+```sh
+PREFIX=path/to/dir make
+```
+
+## Use
 
 The manager can simply be run by calling:
 
 ```sh
-./github_actions_runner_manager.sh <arguments>
+manage-ghar <optional arguments> <subcommand> <path of the runner>
 ```
 
 Like a SysV init script, the manager accepts the subcommands `start`, `stop`, `restart`, and `status`.
