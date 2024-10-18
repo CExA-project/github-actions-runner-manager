@@ -34,7 +34,8 @@ is_running () {
 start () {
     local runner_path="$1"
     local state_path="$2"
-    local force=$3
+    local command="$3"
+    local force=$4
 
     # check if the runner path exists
     if ! [[ -d "$runner_path" ]]
@@ -50,11 +51,17 @@ start () {
         exit 2
     fi
 
-    # running as a service, see https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners/configuring-the-self-hosted-runner-application-as-a-service
+    # running as a service, see
+    # https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners/configuring-the-self-hosted-runner-application-as-a-service
+    if [[ -z $command ]]
+    then
+        command="bin/runsvc.sh"
+    fi
+
     echo "Starting runner"
     echo "Starting runner on $(hostname)" >>$state_path/$LOG_FILE
     cd "$runner_path"
-    bin/runsvc.sh >>$state_path/$LOG_FILE 2>&1 &
+    $command >>$state_path/$LOG_FILE 2>&1 &
 
     # create pid file
     echo "Creating pid file"
@@ -96,13 +103,15 @@ usage () {
     cat <<EOF
 Manage GitHub Actions Runner like a SysV init script
 
-github_actions_runner_manager.sh [-r PATH] [-s PATH] [-f] [-h] {start|stop|restart|status}
+github_actions_runner_manager.sh [-r PATH] [-s PATH] [-c COMMAND] [-f] [-h] {start|stop|restart|status}
 
 Optional arguments:
     -r PATH
         Path to GitHub Actions Runner directory. Default to $DEFAULT_RUNNER_DIR in the script directory.
     -s PATH
         Path to the state directory of the manager (where PID and log files are stored). Default to the script directory.
+    -c COMMAND
+        Script to execute instead of running GHAR directly.
     -f
         Force start even if the runner is running.
     -h
@@ -124,10 +133,11 @@ main () {
     # default arguments
     local runner_path="$SCRIPT_PATH/$DEFAULT_RUNNER_DIR"
     local state_path="$SCRIPT_PATH"
+    local command=""
     local force=false
 
     # process optional arguments
-    while getopts ":hr:s:f" option
+    while getopts ":hr:s:c:f" option
     do
         case $option in
             "h")
@@ -139,6 +149,9 @@ main () {
                 ;;
             "s")
                 state_path="$(realpath $OPTARG)"
+                ;;
+            "c")
+                command="$OPTARG"
                 ;;
             "f")
                 force=true
@@ -160,7 +173,7 @@ main () {
         local cmd="$1"
         case $cmd in
             "start")
-                start "$runner_path" "$state_path" "$force"
+                start "$runner_path" "$state_path" "$command" "$force"
                 exit 0
                 ;;
             "stop")
@@ -170,7 +183,7 @@ main () {
             "restart")
                 stop "$state_path"
                 sleep 1
-                start "$runner_path" "$state_path" "$force"
+                start "$runner_path" "$state_path" "$command" "$force"
                 exit 0
                 ;;
             "status")
