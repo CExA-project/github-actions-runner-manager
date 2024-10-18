@@ -4,7 +4,7 @@ set -eu
 
 PID_FILE="runner.pid"
 LOG_FILE="runner.log"
-DEFAULT_RUNNER_DIR="./actions_runner"
+STATE_DIRNAME="state"
 
 # directory of the script, see https://stackoverflow.com/a/4774063/19422971
 SCRIPT_PATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
@@ -103,15 +103,13 @@ usage () {
     cat <<EOF
 Manage GitHub Actions Runner like a SysV init script
 
-github_actions_runner_manager.sh [-r PATH] [-s PATH] [-c COMMAND] [-f] [-h] {start|stop|restart|status}
+github_actions_runner_manager.sh [-s STATE_PATH] [-c COMMAND] [-f] [-h] {start|stop|restart|status} RUNNER_PATH
 
 Optional arguments:
-    -r PATH
-        Path to GitHub Actions Runner directory. Default to $DEFAULT_RUNNER_DIR in the script directory.
-    -s PATH
-        Path to the state directory of the manager (where PID and log files are stored). Default to the script directory.
+    -s STATE_PATH
+        Path to the state directory of the manager (where PID and log files are stored). Default to $STATE_DIRNAME in the runner directory.
     -c COMMAND
-        Script to execute instead of running GHAR directly.
+        Script to execute instead of running the runner directly.
     -f
         Force start even if the runner is running.
     -h
@@ -126,29 +124,29 @@ Subcommands:
         Stop and start the runner.
     status
         Tell if the runner is running.
+
+Mandatory arguments:
+    RUNNER_PATH
+        Path to a GitHub Actions Runner directory.
 EOF
 }
 
 main () {
     # default arguments
-    local runner_path="$SCRIPT_PATH/$DEFAULT_RUNNER_DIR"
-    local state_path="$SCRIPT_PATH"
+    local state_path=""
     local command=""
     local force=false
 
     # process optional arguments
-    while getopts ":hr:s:c:f" option
+    while getopts ":hs:c:f" option
     do
         case $option in
             "h")
                 usage
                 exit 0
                 ;;
-            "r")
-                runner_path="$OPTARG"
-                ;;
             "s")
-                state_path="$(realpath $OPTARG)"
+                state_path="$OPTARG"
                 ;;
             "c")
                 command="$OPTARG"
@@ -165,42 +163,51 @@ main () {
     done
     shift $((OPTIND-1))
 
-    mkdir -p "$state_path"
-
-    # process mandatory argument
-    if [[ -n "${1+_}" ]]
+    # process mandatory arguments
+    if [[ -z "${1+_}" ]] || [[ -z "${2+_}" ]]
     then
-        local cmd="$1"
-        case $cmd in
-            "start")
-                start "$runner_path" "$state_path" "$command" "$force"
-                exit 0
-                ;;
-            "stop")
-                stop "$state_path"
-                exit 0
-                ;;
-            "restart")
-                stop "$state_path"
-                sleep 1
-                start "$runner_path" "$state_path" "$command" "$force"
-                exit 0
-                ;;
-            "status")
-                status "$state_path"
-                exit 0
-                ;;
-            *)
-                echo "Unknown subcommand $cmd"
-                usage
-                exit 1
-                ;;
-        esac
+        echo "Missing arguments"
+        usage
+        exit 1
     fi
 
-    # no arguments
-    usage
-    exit 0
+    local cmd="$1"
+    local runner_path="$(realpath "$2")"
+
+    if [[ -z $state_path ]]
+    then
+        state_path="$runner_path/$STATE_DIRNAME"
+    else
+        state_path="$(realpath "$state_path")"
+    fi
+
+    mkdir -p "$state_path"
+
+    case $cmd in
+        "start")
+            start "$runner_path" "$state_path" "$command" "$force"
+            exit 0
+            ;;
+        "stop")
+            stop "$state_path"
+            exit 0
+            ;;
+        "restart")
+            stop "$state_path"
+            sleep 1
+            start "$runner_path" "$state_path" "$command" "$force"
+            exit 0
+            ;;
+        "status")
+            status "$state_path"
+            exit 0
+            ;;
+        *)
+            echo "Unknown subcommand $cmd"
+            usage
+            exit 1
+            ;;
+    esac
 }
 
 main "$@"
