@@ -136,7 +136,7 @@ If there is a configuration file $CONFIG_FILE in the user home directory, then m
     state_path
     runner_command
     force
-Arguments must be in the form "<key>=<value>".
+Arguments must be in the form "<key>=<value>". Arguments from the command line have a higher priority.
 EOF
 }
 
