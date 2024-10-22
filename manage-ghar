@@ -5,6 +5,7 @@ set -eu
 PID_FILE="runner.pid"
 LOG_FILE="runner.log"
 STATE_DIRNAME="state"
+CONFIG_FILE=".manage_ghar.conf"
 
 # check if runner is running based on the existence of a state file and based
 # on a valid PID
@@ -32,7 +33,7 @@ is_running () {
 start () {
     local runner_path="$1"
     local state_path="$2"
-    local command="$3"
+    local runner_command="$3"
     local force=$4
 
     # check if the runner path exists
@@ -51,15 +52,15 @@ start () {
 
     # running as a service, see
     # https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners/configuring-the-self-hosted-runner-application-as-a-service
-    if [[ -z $command ]]
+    if [[ -z $runner_command ]]
     then
-        command="bin/runsvc.sh"
+        runner_command="bin/runsvc.sh"
     fi
 
     echo "Starting runner"
     echo "Starting runner on $(hostname)" >>"$state_path/$LOG_FILE"
     cd "$runner_path"
-    $command >>"$state_path/$LOG_FILE" 2>&1 &
+    $runner_command >>"$state_path/$LOG_FILE" 2>&1 &
 
     # create pid file
     echo "Creating pid file"
@@ -102,13 +103,13 @@ usage () {
     cat <<EOF
 Manage GitHub Actions Runner like a SysV init script
 
-manage-ghar [-s STATE_PATH] [-c COMMAND] [-f] [-h] {start|stop|restart|status} RUNNER_PATH
+manage-ghar [-s STATE_PATH] [-r RUNNER_COMMAND] [-f] [-h] {start|stop|restart|status} RUNNER_PATH
 
 Optional arguments:
     -s STATE_PATH
         Path to the state directory of the manager (where PID and log files are stored). Default to $STATE_DIRNAME in the runner directory.
-    -c COMMAND
-        Script to execute instead of running the runner directly.
+    -r RUNNER_COMMAND
+        Command to execute instead of running the runner directly. This command should not take any argument.
     -f
         Force start even if the runner is running.
     -h
@@ -127,17 +128,23 @@ Subcommands:
 Mandatory arguments:
     RUNNER_PATH
         Path to a GitHub Actions Runner directory.
+
+If there is a configuration file $CONFIG_FILE in the runner path, then manage-ghar will use it to populate the following optional arguments:
+    state_path
+    runner_command
+    force
+Arguments must be in the form "<key>=<value>".
 EOF
 }
 
 main () {
     # default arguments
     local state_path=""
-    local command=""
+    local runner_command=""
     local force=false
 
     # process optional arguments
-    while getopts ":hs:c:f" option
+    while getopts ":hs:r:f" option
     do
         case $option in
             "h")
@@ -147,8 +154,8 @@ main () {
             "s")
                 state_path="$OPTARG"
                 ;;
-            "c")
-                command="$OPTARG"
+            "r")
+                runner_command="$OPTARG"
                 ;;
             "f")
                 force=true
@@ -170,10 +177,23 @@ main () {
         exit 1
     fi
 
-    local cmd="$1"
+    local subcommand="$1"
     local runner_path
     runner_path="$(realpath "$2")"
 
+    # read configuration if available
+    if [[ -f $runner_path/$CONFIG_FILE ]]
+    then
+        while read -r line
+        do
+            if [[ "$line" == "state_path="* ]] || [[ "$line" == "runner_command="* ]] || [[ "$line" == "force="* ]]
+            then
+                declare "$line"
+            fi
+        done <"$runner_path/$CONFIG_FILE"
+    fi
+
+    # process state path
     if [[ -z $state_path ]]
     then
         state_path="$runner_path/$STATE_DIRNAME"
@@ -183,9 +203,10 @@ main () {
 
     mkdir -p "$state_path"
 
-    case $cmd in
+    # process subcommand
+    case $subcommand in
         "start")
-            start "$runner_path" "$state_path" "$command" "$force"
+            start "$runner_path" "$state_path" "$runner_command" "$force"
             exit 0
             ;;
         "stop")
@@ -195,7 +216,7 @@ main () {
         "restart")
             stop "$state_path"
             sleep 1
-            start "$runner_path" "$state_path" "$command" "$force"
+            start "$runner_path" "$state_path" "$runner_command" "$force"
             exit 0
             ;;
         "status")
@@ -203,7 +224,7 @@ main () {
             exit 0
             ;;
         *)
-            echo "Unknown subcommand $cmd"
+            echo "Unknown subcommand $subcommand"
             usage
             exit 1
             ;;
