@@ -6,6 +6,7 @@ PID_FILE="runner.pid"
 LOG_FILE="runner.log"
 STATE_DIRNAME="state"
 CONFIG_FILE=".manage_ghar.conf"
+VERSION="0.0.0"
 
 # check if runner is running based on the existence of a state file and based
 # on a valid PID
@@ -103,7 +104,7 @@ usage () {
     cat <<EOF
 Manage GitHub Actions Runner like a SysV init script
 
-manage-ghar [-s STATE_PATH] [-r RUNNER_COMMAND] [-f] [-h] {start|stop|restart|status} RUNNER_PATH
+manage-ghar [-s STATE_PATH] [-r RUNNER_COMMAND] [-f] [-v] [-h] {start|stop|restart|status} RUNNER_PATH
 
 Optional arguments:
     -s STATE_PATH
@@ -112,6 +113,8 @@ Optional arguments:
         Command to execute instead of running the runner directly. This command should not take any argument.
     -f
         Force start even if the runner is running.
+    -v
+        Show current version and exit.
     -h
         Show this help message and exit.
 
@@ -137,6 +140,10 @@ Arguments must be in the form "<key>=<value>".
 EOF
 }
 
+show_version () {
+    echo "manage-ghar v$VERSION"
+}
+
 main () {
     # default arguments
     local state_path=""
@@ -150,11 +157,15 @@ main () {
     fi
 
     # process optional arguments
-    while getopts ":hs:r:f" option
+    while getopts ":hvs:r:f" option
     do
         case $option in
             "h")
                 usage
+                exit 0
+                ;;
+            "v")
+                show_version
                 exit 0
                 ;;
             "s")
