@@ -6,9 +6,6 @@ PID_FILE="runner.pid"
 LOG_FILE="runner.log"
 STATE_DIRNAME="state"
 
-# directory of the script, see https://stackoverflow.com/a/4774063/19422971
-SCRIPT_PATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
-
 # check if runner is running based on the existence of a state file and based
 # on a valid PID
 is_running () {
@@ -20,10 +17,11 @@ is_running () {
         return 1
     fi
 
-    local pid=$(cat $state_path/$PID_FILE)
+    local pid
+    pid=$(cat "$state_path/$PID_FILE")
 
     # check PID exists
-    if ps -p $pid >/dev/null
+    if ps -p "$pid" >/dev/null
     then
         return 0
     else
@@ -59,13 +57,13 @@ start () {
     fi
 
     echo "Starting runner"
-    echo "Starting runner on $(hostname)" >>$state_path/$LOG_FILE
+    echo "Starting runner on $(hostname)" >>"$state_path/$LOG_FILE"
     cd "$runner_path"
-    $command >>$state_path/$LOG_FILE 2>&1 &
+    $command >>"$state_path/$LOG_FILE" 2>&1 &
 
     # create pid file
     echo "Creating pid file"
-    echo $! >$state_path/$PID_FILE
+    echo $! >"$state_path/$PID_FILE"
 }
 
 stop () {
@@ -74,18 +72,19 @@ stop () {
     # check if the runner is running
     if is_running "$state_path"
     then
-        local pid=$(cat $state_path/$PID_FILE)
+        local pid
+        pid=$(cat "$state_path/$PID_FILE")
 
         echo "Stopping runner"
-        echo "Stopping runner on $(hostname)" >>$state_path/$LOG_FILE
-        kill -SIGTERM $pid
+        echo "Stopping runner on $(hostname)" >>"$state_path/$LOG_FILE"
+        kill -SIGTERM "$pid"
     else
         echo "Runner already stopped"
-        echo "Runner already stopped on $(hostname)" >>$state_path/$LOG_FILE
+        echo "Runner already stopped on $(hostname)" >>"$state_path/$LOG_FILE"
     fi
 
     echo "Removing PID file"
-    rm --force $state_path/$PID_FILE
+    rm --force "$state_path/$PID_FILE"
 }
 
 status () {
@@ -172,7 +171,8 @@ main () {
     fi
 
     local cmd="$1"
-    local runner_path="$(realpath "$2")"
+    local runner_path
+    runner_path="$(realpath "$2")"
 
     if [[ -z $state_path ]]
     then
