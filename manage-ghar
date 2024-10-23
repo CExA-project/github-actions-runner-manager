@@ -53,14 +53,22 @@ start () {
 
     # running as a service, see
     # https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners/configuring-the-self-hosted-runner-application-as-a-service
-    if [[ -z $runner_command ]]
+    if [[ -z "$runner_command" ]]
     then
         runner_command="bin/runsvc.sh"
     fi
 
+    cd "$runner_path"
+
+    # check if runner command is valid
+    if ! ([[ -x "$runner_command" ]] || type "$runner_command" >/dev/null 2>&1)
+    then
+        echo "Runner command $runner_command is invalid"
+        exit 2
+    fi
+
     echo "Starting runner"
     echo "Starting runner on $(hostname)" >>"$state_path/$LOG_FILE"
-    cd "$runner_path"
     $runner_command >>"$state_path/$LOG_FILE" 2>&1 &
 
     # create pid file
