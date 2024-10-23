@@ -41,14 +41,14 @@ start () {
     if ! [[ -d "$runner_path" ]]
     then
         echo "Runner path not found"
-        exit 2
+        return 10
     fi
 
     # check if the runner is running
     if ! $force && is_running "$state_path"
     then
         echo "The runner is already running"
-        exit 2
+        return 11
     fi
 
     # running as a service, see
@@ -64,7 +64,7 @@ start () {
     if ! ([[ -x "$runner_command" ]] || type "$runner_command" >/dev/null 2>&1)
     then
         echo "Runner command $runner_command is invalid"
-        exit 2
+        return 12
     fi
 
     echo "Starting runner"
@@ -122,9 +122,9 @@ Optional arguments:
     -f
         Force start even if the runner is running.
     -v
-        Show current version and exit.
+        Show current version and return.
     -h
-        Show this help message and exit.
+        Show this help message and return.
 
 Subcommands:
     start
@@ -170,11 +170,11 @@ main () {
         case $option in
             "h")
                 usage
-                exit 0
+                return 0
                 ;;
             "v")
                 show_version
-                exit 0
+                return 0
                 ;;
             "s")
                 state_path="$OPTARG"
@@ -188,7 +188,7 @@ main () {
             *)
                 echo "Unknown option $OPTARG"
                 usage
-                exit 1
+                return 1
                 ;;
         esac
     done
@@ -199,7 +199,7 @@ main () {
     then
         echo "Missing arguments"
         usage
-        exit 1
+        return 2
     fi
 
     local subcommand="$1"
@@ -220,26 +220,26 @@ main () {
     case $subcommand in
         "start")
             start "$runner_path" "$state_path" "$runner_command" "$force"
-            exit 0
+            return 0
             ;;
         "stop")
             stop "$state_path"
-            exit 0
+            return 0
             ;;
         "restart")
             stop "$state_path"
             sleep 1
             start "$runner_path" "$state_path" "$runner_command" "$force"
-            exit 0
+            return 0
             ;;
         "status")
             status "$state_path"
-            exit 0
+            return 0
             ;;
         *)
             echo "Unknown subcommand $subcommand"
             usage
-            exit 1
+            return 3
             ;;
     esac
 }
