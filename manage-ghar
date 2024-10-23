@@ -40,14 +40,14 @@ start () {
     # check if the runner path exists
     if ! [[ -d "$runner_path" ]]
     then
-        echo "Runner path not found"
+        echo "Runner path not found" >&2
         return 10
     fi
 
     # check if the runner is running
     if ! $force && is_running "$state_path"
     then
-        echo "The runner is already running"
+        echo "The runner is already running" >&2
         return 11
     fi
 
@@ -63,7 +63,7 @@ start () {
     # check if runner command is valid
     if ! ([[ -x "$runner_command" ]] || type "$runner_command" >/dev/null 2>&1)
     then
-        echo "Runner command $runner_command is invalid"
+        echo "Runner command $runner_command is invalid" >&2
         return 12
     fi
 
@@ -192,7 +192,7 @@ main () {
                 force=true
                 ;;
             *)
-                echo "Unknown option $OPTARG"
+                echo "Unknown option $OPTARG" >&2
                 usage
                 return 1
                 ;;
@@ -203,7 +203,7 @@ main () {
     # process mandatory arguments
     if [[ -z "${1+_}" ]] || [[ -z "${2+_}" ]]
     then
-        echo "Missing arguments"
+        echo "Missing arguments" >&2
         usage
         return 2
     fi
@@ -243,7 +243,7 @@ main () {
             return 0
             ;;
         *)
-            echo "Unknown subcommand $subcommand"
+            echo "Unknown subcommand $subcommand" >&2
             usage
             return 3
             ;;
