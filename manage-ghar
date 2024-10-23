@@ -120,7 +120,7 @@ Optional arguments:
     -r RUNNER_COMMAND
         Command to execute instead of running the runner directly. This command should not take any argument.
     -f
-        Force start even if the runner is running.
+        Force start even if the runner is running (may have unpredictable effects).
     -v
         Show current version and return.
     -h
@@ -139,12 +139,17 @@ Subcommands:
 Mandatory arguments:
     RUNNER_PATH
         Path to a GitHub Actions Runner directory.
+EOF
+}
+
+usage_extra () {
+    cat <<EOF
 
 If there is a configuration file $CONFIG_FILE in the user home directory, then manage-ghar will use it to set the default value of the following optional arguments:
     state_path
     runner_command
-    force
-Arguments must be in the form "<key>=<value>". Arguments from the command line have a higher priority.
+    force (true or false)
+Arguments must be in the form "<key>=<value>". Arguments from the command line override those default values.
 EOF
 }
 
@@ -170,6 +175,7 @@ main () {
         case $option in
             "h")
                 usage
+                usage_extra
                 return 0
                 ;;
             "v")
