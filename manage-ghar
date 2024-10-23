@@ -6,7 +6,7 @@ PID_FILE="runner.pid"
 LOG_FILE="runner.log"
 STATE_DIRNAME="state"
 CONFIG_FILE=".manage_ghar.conf"
-VERSION="0.0.0"
+VERSION="0.1.0"
 
 # check if runner is running based on the existence of a state file and based
 # on a valid PID
