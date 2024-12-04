@@ -48,7 +48,7 @@ start () {
     if ! $force && is_running "$state_path"
     then
         echo "The runner is already running" >&2
-        return 11
+        return 0
     fi
 
     # running as a service, see
