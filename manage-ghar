@@ -8,6 +8,9 @@ STATE_DIRNAME="state"
 CONFIG_FILE=".manage_ghar.conf"
 VERSION="0.1.0"
 
+DEBUG=false
+QUIET=false
+
 # check if runner is running based on the existence of a state file and based
 # on a valid PID
 is_running () {
@@ -40,14 +43,14 @@ start () {
     # check if the runner path exists
     if ! [[ -d "$runner_path" ]]
     then
-        echo "Runner path not found" >&2
+        message_error "Runner path not found"
         return 10
     fi
 
     # check if the runner is running
     if ! $force && is_running "$state_path"
     then
-        echo "The runner is already running" >&2
+        message_info "The runner is already running"
         return 0
     fi
 
@@ -63,16 +66,16 @@ start () {
     # check if runner command is valid
     if ! ([[ -x "$runner_command" ]] || type "$runner_command" >/dev/null 2>&1)
     then
-        echo "Runner command $runner_command is invalid" >&2
+        message_error "Runner command $runner_command is invalid"
         return 12
     fi
 
-    echo "Starting runner"
+    message_info "Starting runner"
     echo "Starting runner on $(hostname)" >>"$state_path/$LOG_FILE"
     $runner_command >>"$state_path/$LOG_FILE" 2>&1 &
 
     # create pid file
-    echo "Creating pid file"
+    message_debug "Creating pid file"
     echo $! >"$state_path/$PID_FILE"
 }
 
@@ -85,15 +88,15 @@ stop () {
         local pid
         pid=$(cat "$state_path/$PID_FILE")
 
-        echo "Stopping runner"
+        message_info "Stopping runner"
         echo "Stopping runner on $(hostname)" >>"$state_path/$LOG_FILE"
         kill -SIGTERM "$pid"
     else
-        echo "Runner already stopped"
+        message_info "Runner already stopped"
         echo "Runner already stopped on $(hostname)" >>"$state_path/$LOG_FILE"
     fi
 
-    echo "Removing PID file"
+    message_debug "Removing PID file"
     rm --force "$state_path/$PID_FILE"
 }
 
@@ -102,17 +105,47 @@ status () {
 
     if is_running "$state_path"
     then
-        echo "Runner started"
+        message_info "Runner started"
     else
-        echo "Runner stopped"
+        message_info "Runner stopped"
     fi
+}
+
+message_debug () {
+    local message="$*"
+
+    if $DEBUG && ! $QUIET
+    then
+        echo "$message"
+    fi
+}
+
+message_info () {
+    local message="$*"
+
+    if ! $QUIET
+    then
+        echo "$message"
+    fi
+}
+
+message_warning () {
+    local message="$*"
+
+    echo "Warning: $message" >&2
+}
+
+message_error () {
+    local message="$*"
+
+    echo "Error: $message" >&2
 }
 
 usage () {
     cat <<EOF
 Manage GitHub Actions Runner like a SysV init script
 
-manage-ghar [-s STATE_PATH] [-r RUNNER_COMMAND] [-f] [-v] [-h] {start|stop|restart|status} RUNNER_PATH
+manage-ghar [-s STATE_PATH] [-r RUNNER_COMMAND] [-f] [-d] [-q] [-v] [-h] {start|stop|restart|status} RUNNER_PATH
 
 Optional arguments:
     -s STATE_PATH
@@ -121,6 +154,10 @@ Optional arguments:
         Command to execute instead of running the runner directly. This command should not take any argument.
     -f
         Force start even if the runner is running (may have unpredictable effects).
+    -d
+        Increase verbosity to debug messages.
+    -q
+        Decrease verbosity to warning and error messages.
     -v
         Show current version and return.
     -h
@@ -170,7 +207,7 @@ main () {
     fi
 
     # process optional arguments
-    while getopts ":hvs:r:f" option
+    while getopts ":hvqds:r:f" option
     do
         case $option in
             "h")
@@ -182,6 +219,12 @@ main () {
                 show_version
                 return 0
                 ;;
+            "q")
+                QUIET=true
+                ;;
+            "d")
+                DEBUG=true
+                ;;
             "s")
                 state_path="$OPTARG"
                 ;;
@@ -192,7 +235,7 @@ main () {
                 force=true
                 ;;
             *)
-                echo "Unknown option $OPTARG" >&2
+                message_error "Unknown option $OPTARG"
                 usage
                 return 1
                 ;;
@@ -203,7 +246,7 @@ main () {
     # process mandatory arguments
     if [[ -z "${1+_}" ]] || [[ -z "${2+_}" ]]
     then
-        echo "Missing arguments" >&2
+        message_error "Missing arguments"
         usage
         return 2
     fi
@@ -243,7 +286,7 @@ main () {
             return 0
             ;;
         *)
-            echo "Unknown subcommand $subcommand" >&2
+            message_error "Unknown subcommand $subcommand"
             usage
             return 3
             ;;
