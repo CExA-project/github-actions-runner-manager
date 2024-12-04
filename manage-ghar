@@ -6,7 +6,7 @@ PID_FILE="runner.pid"
 LOG_FILE="runner.log"
 STATE_DIRNAME="state"
 CONFIG_FILE=".manage_ghar.conf"
-VERSION="0.1.0"
+VERSION="0.2.0"
 
 DEBUG=false
 QUIET=false
