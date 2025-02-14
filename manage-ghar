@@ -64,7 +64,8 @@ start () {
     cd "$runner_path"
 
     # check if runner command is valid
-    if ! ([[ -x "$runner_command" ]] || type "$runner_command" >/dev/null 2>&1)
+    # i.e., the command is executable and exists
+    if ! ([[ -x "$runner_command" ]] || ! type "$runner_command" >/dev/null 2>&1)
     then
         message_error "Runner command $runner_command is invalid"
         return 12

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Fix condition when providing a custom command.
+
 ## Version 0.2.0
 
 - Allow quiet and debug modes.
