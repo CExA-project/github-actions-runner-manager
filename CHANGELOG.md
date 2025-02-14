@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## Version 0.2.1
+
 - Fix condition when providing a custom command.
 
 ## Version 0.2.0
