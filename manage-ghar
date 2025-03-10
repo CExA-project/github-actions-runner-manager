@@ -65,10 +65,19 @@ start () {
 
     # check if runner command is valid
     # i.e., the command is executable and exists
-    if ! ([[ -x "$runner_command" ]] || ! type "$runner_command" >/dev/null 2>&1)
+    # first check command exists
+    if ! type "$runner_command" >/dev/null 2>&1
     then
-        message_error "Runner command $runner_command is invalid"
+        message_error "Runner command $runner_command not found"
         return 12
+    fi
+    local runner_path
+    runner_path=$(command -v "$runner_command")
+    # then check command is executable
+    if ! [[ -x "$runner_path" ]]
+    then
+        message_error "Runner command $runner_command not executable"
+        return 13
     fi
 
     message_info "Starting runner"
