@@ -224,10 +224,12 @@ main () {
 
     # read configuration if available
     local config_file=$HOME/$CONFIG_FILE
+    local config_loaded=false
     if [[ -f "$config_file" ]]
     then
         # shellcheck source=/dev/null
         source "$config_file"
+        config_loaded=true
     fi
 
     # process optional arguments
@@ -278,6 +280,16 @@ main () {
     local subcommand="$1"
     local runner_path
     runner_path="$(realpath "$2")"
+
+    if $config_loaded
+    then
+        message_debug "Config loaded from $config_file"
+    fi
+    message_debug "State path: $state_path"
+    message_debug "Runner command: $runner_command"
+    message_debug "Force: $force"
+    message_debug "Subcommand: $subcommand"
+    message_debug "Runner path: $runner_path"
 
     # process state path
     if [[ -z $state_path ]]
