@@ -34,6 +34,32 @@ is_running () {
     fi
 }
 
+# check if the provided command, either a command or a path to an executable,
+# is valid
+command_is_valid () {
+    local command="$1"
+
+    # check command is within PATH and valid
+    if type "$command" >/dev/null 2>&1
+    then
+        return
+    fi
+
+    # check the path command exists and is executable
+    if ! [[ -f "$command" ]]
+    then
+        message_error "Command $command not found"
+        return 12
+    fi
+    if ! [[ -x "$command" ]]
+    then
+        message_error "Command $command not executable"
+        return 13
+    fi
+}
+
+
+
 start () {
     local runner_path="$1"
     local state_path="$2"
@@ -64,21 +90,7 @@ start () {
     cd "$runner_path"
 
     # check if runner command is valid
-    # i.e., the command is executable and exists
-    # first check command exists
-    if ! type "$runner_command" >/dev/null 2>&1
-    then
-        message_error "Runner command $runner_command not found"
-        return 12
-    fi
-    local runner_path
-    runner_path=$(command -v "$runner_command")
-    # then check command is executable
-    if ! [[ -x "$runner_path" ]]
-    then
-        message_error "Runner command $runner_command not executable"
-        return 13
-    fi
+    command_is_valid "$runner_command"
 
     message_info "Starting runner"
     echo "Starting runner on $(hostname)" >>"$state_path/$LOG_FILE"
@@ -211,9 +223,11 @@ main () {
     local force=false
 
     # read configuration if available
-    if [[ -f "$HOME/$CONFIG_FILE" ]]
+    local config_file=$HOME/$CONFIG_FILE
+    if [[ -f "$config_file" ]]
     then
-        declare "$(env -i "$(cat "$HOME/$CONFIG_FILE")")"
+        # shellcheck source=/dev/null
+        source "$config_file"
     fi
 
     # process optional arguments
