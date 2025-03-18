@@ -281,6 +281,15 @@ main () {
     local runner_path
     runner_path="$(realpath "$2")"
 
+    # process state path
+    if [[ -z $state_path ]]
+    then
+        state_path="$runner_path/$STATE_DIRNAME"
+    else
+        state_path="$(realpath "$state_path")"
+    fi
+
+    # print debug config
     if $config_loaded
     then
         message_debug "Config loaded from $config_file"
@@ -290,14 +299,6 @@ main () {
     message_debug "Force: $force"
     message_debug "Subcommand: $subcommand"
     message_debug "Runner path: $runner_path"
-
-    # process state path
-    if [[ -z $state_path ]]
-    then
-        state_path="$runner_path/$STATE_DIRNAME"
-    else
-        state_path="$(realpath "$state_path")"
-    fi
 
     mkdir -p "$state_path"
 
